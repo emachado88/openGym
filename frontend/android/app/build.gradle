@@ -1,5 +1,13 @@
 apply plugin: 'com.android.application'
 
+// Release signing: keystore.properties (gitignored, next to settings.gradle) points at the
+// keystore. Without it, assembleRelease stays unsigned -> Android answers "App not installed".
+def keystoreFile = rootProject.file('keystore.properties')
+def keystoreProps = new Properties()
+if (keystoreFile.exists()) {
+    keystoreFile.withInputStream { keystoreProps.load(it) }
+}
+
 android {
     namespace "ch.duartesantos.opengym"
     compileSdk rootProject.ext.compileSdkVersion
@@ -16,10 +24,23 @@ android {
             ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        release {
+            if (keystoreProps.containsKey('storeFile')) {
+                storeFile file(keystoreProps['storeFile'])
+                storePassword keystoreProps['storePassword']
+                keyAlias keystoreProps['keyAlias']
+                keyPassword keystoreProps['keyPassword']
+            }
+        }
+    }
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            if (keystoreProps.containsKey('storeFile')) {
+                signingConfig signingConfigs.release
+            }
             // The barcode scanner's ML Kit library ships a native build for four CPU families.
             // Phones are ARM; the two x86 builds only serve emulators and a few Chromebooks, which
             // run ARM code through translation anyway. Leaving them out takes about 12 MB off

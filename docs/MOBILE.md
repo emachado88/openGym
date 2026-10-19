@@ -308,6 +308,23 @@ zipalign -f -p 4 app-release-unsigned.apk aligned.apk
 apksigner sign --ks my.keystore --ks-key-alias opengym --out openGym.apk aligned.apk
 ```
 
+Or let Gradle sign it, so the build is one command. Put the keystore in
+`frontend/android/keystore.properties` (gitignored); `storeFile` is relative to `frontend/android`:
+
+```properties
+storeFile=/home/you/keys/opengym.jks
+storePassword=…
+keyAlias=opengym
+keyPassword=…
+```
+
+```sh
+cd frontend && npm run build:mobile && npm run mobile:apk:release
+# → android/app/build/outputs/apk/release/app-release.apk
+```
+
+Without that file the same command still builds, but produces `app-release-unsigned.apk`.
+
 ### iPhone — what's actually possible
 
 Apple does not allow installing apps outside the App Store, so there is no `.ipa` download
