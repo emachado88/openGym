@@ -1,0 +1,25 @@
+# Local override — not part of upstream.
+#
+# NordVPN's Linux client is connected and drops traffic that Docker forwards from its bridge
+# (kill switch off, firewall on): from inside the api container, generativelanguage, opencode
+# and api.openai.com all ended in ETIMEDOUT, while the host reached them fine. Allowlisting
+# 172.18.0.0/16 is refused while LAN discovery is on, and turning the firewall off did not
+# help, so neither container is bridged any more: both share the host's network namespace and
+# their egress is the host's own. That also removes the host.docker.internal hop nginx would
+# otherwise need (Docker's embedded DNS does not answer extra_hosts names).
+#
+# Consequences, all local:
+#   - nginx listens on 8080 itself (uid 101 cannot bind 80; ip_unprivileged_port_start=1024),
+#     so WEB_PORT in .env no longer applies — the app stays at http://localhost:8080.
+#   - api and web talk over 127.0.0.1, and there is no per-service network isolation left.
+services:
+  api:
+    network_mode: host
+
+  web:
+    network_mode: host
+    ports: !reset []
+    environment:
+      - NGINX_PORT=8080
+      - BACKEND=127.0.0.1
+      - RESOLVER=103.86.99.100
